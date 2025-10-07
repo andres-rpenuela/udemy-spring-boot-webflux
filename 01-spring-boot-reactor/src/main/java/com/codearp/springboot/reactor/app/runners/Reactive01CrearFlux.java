@@ -20,6 +20,14 @@ public class Reactive01CrearFlux implements CommandLineRunner {
 
         Flux<String> names = Flux.just("Andres", "John", "Jane", "Doe");
 
+        // Subscribe with a simple consumer
         names.subscribe(System.out::println);
+
+        // Subscribe with full consumer (onNext, onError, onComplete)
+        names.subscribe(
+            name -> System.out.println("Name: " + name),
+            error -> System.err.println("Error: " + error),
+            () -> System.out.println("Completed")
+        );
     }
 }

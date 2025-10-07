@@ -139,3 +139,36 @@ names.subscribe(
 ```
 
 # Evento `onComplete`
+Cuando finaliza un observable correamente, se ejecuta el `onComplete`, el cual, el observer o subcriptor puede realizar alguna tarea.
+
+```java
+private static final Logger log = LoggerFactory.getLogger(ProjectReacto03CrearObservable.class);
+
+// Observable (emisor de datos)
+Flux<String> names = Flux.just("Andres","Juan","Pedro","","Maria")
+        // Simula un error
+        .doOnNext( e -> {
+                    if( e.isEmpty() ){ // Interrumpe el flujo, no se emiete los siguientes
+                        throw new RuntimeException("Nombres no pueden ser vacíos");
+                    }else{
+                        System.out.println(e);
+                    }
+                }
+        );
+        //.doOnComplete(() -> System.out.println("fin"));
+
+// subscibe, hace algo cuando emite
+names.subscribe(
+    // next (cunamer)
+    name -> log.info(name),
+    // error (Consumer)
+    error -> log.error(error.getMessage()),
+    // complete (Runnamble)
+    () -> new Runnable(){
+        @Override
+        public void run() {
+            log.info("Completado");
+        }
+    }
+);
+```

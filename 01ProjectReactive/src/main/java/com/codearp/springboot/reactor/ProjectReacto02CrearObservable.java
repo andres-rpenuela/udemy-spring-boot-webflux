@@ -7,6 +7,7 @@ import reactor.core.publisher.Flux;
 /**
  * Crear un observable basico de string
  * 1. Mostar los elemenots que emite
+ * 2. Elimie los elementoes que empieza por 'A'
  * 2. Subcribirse y mostrar los elmentos que se han emitido
  */
 public class ProjectReacto02CrearObservable {
