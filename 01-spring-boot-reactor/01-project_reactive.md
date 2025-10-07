@@ -172,3 +172,41 @@ names.subscribe(
     }
 );
 ```
+
+# Operadores en un Observable `filter`, `map`, `flatMap`,...
+
+Cuando se emite un valor, se pueden aplicar operadores para transformar, filtrar, combinar, etc.
+
+```java
+Flux<String> names = Flux.just("Andres", "John", "Jane", "Doe")
+        .map(String::toUpperCase)
+        .filter(name -> name.length() >= 4)
+        .doOnNext(name -> {
+            if (name.equals("JANE")) {
+                throw new RuntimeException("Error processing name: " + name);
+            }
+        })
+        // Log each name processed
+        //.log()
+        // Handle error by providing a default value
+        .onErrorResume(e -> {
+            System.err.println("Caught error: " + e.getMessage());
+            return Mono.just("DEFAULT");
+        });
+
+// Subscribe with full consumer (onNext, onError, onComplete)
+names.subscribe(
+    name -> System.out.println("Name: " + name),
+    error -> System.err.println("Error: " + error),
+    () -> System.out.println("Completed")
+);
+```
+
+```bash
+Reactive01CrearFlux run
+Name: ANDRES
+Name: JOHN
+Caught error: Error processing name: JANE
+Name: DEFAULT
+Completed
+```
