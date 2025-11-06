@@ -5,7 +5,7 @@ La programación reactiva es un paradigma de desarrollo que permite manejar fluj
 En Java y Spring, se utiliza para construir aplicaciones que pueden escalar mejor y responder eficientemente a múltiples solicitudes concurrentes.
 
 ## En Java:
-e basa en el estándar Reactive Streams, que define cómo los componentes interactúan de forma asíncrona usando operadores como map, filter, etc. Las implementaciones más conocidas son Project Reactor (usado en Spring) y RxJava
+Se basa en el estándar Reactive Streams, que define cómo los componentes interactúan de forma asíncrona usando operadores como map, filter, etc. Las implementaciones más conocidas son Project Reactor (usado en Spring) y RxJava
 
 ## En Spring
 pring introduce el módulo WebFlux, que permite crear APIs reactivas usando los tipos Mono (0 o 1 elemento) y Flux (0 a N elementos) de Project Reactor. Esto permite manejar peticiones HTTP, acceso a bases de datos y otros recursos de forma no bloqueante, mejorando el rendimiento en aplicaciones con alta concurrencia.
