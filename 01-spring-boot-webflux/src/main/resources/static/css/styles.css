@@ -1,0 +1,8 @@
+/* Estilos mínimos para que la tabla se vea legible */
+body { font-family: Arial, Helvetica, sans-serif; margin: 20px; }
+table { border-collapse: collapse; width: 100%; max-width: 900px; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
+th { background: #f2f2f2; }
+a { color: #0066cc; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.actions a { margin-right: 8px; }
