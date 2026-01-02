@@ -86,7 +86,54 @@ public class ProductController {
         model.addAttribute("title", "Product List");
         // observer two - thymeleaf view
         // se modifica el buffer de datos para que Thymeleaf procese los elementos a medida que llegan
+        // número de elementos que se procesan en cada "chunk"
         model.addAttribute("products", new ReactiveDataDriverContextVariable(productsFlux, 2));
         return "products/list";
+    }
+
+    @GetMapping("/products-chunked")
+    public String listProductsChunked(Model model) {
+
+        // Obtener el Flux y transformar nombres a mayúsculas
+        Flux<Product> productsFlux = productDao.findAll()
+                .map(p -> {
+                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
+                    return p;
+                })
+                // Simular un flujo de elementos grande
+                .repeat(5000);
+
+        // Suscribirse para imprimir los nombres de los productos - observer one
+        productsFlux.subscribe(p -> log.info(p.getName()));
+
+        model.addAttribute("title", "Product List");
+        // observer two - thymeleaf view
+        // se modifica el buffer de datos para que Thymeleaf procese los elementos a medida que llegan
+        // creando "chunks" o bloques de datos, recomendado para grandes cantidades de informacion
+        model.addAttribute("products", productsFlux);
+        return "products/list";
+    }
+
+    @GetMapping("/products-chunked-view-names")
+    public String listProductsChunkedViewNames(Model model) {
+
+        // Obtener el Flux y transformar nombres a mayúsculas
+        Flux<Product> productsFlux = productDao.findAll()
+                .map(p -> {
+                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
+                    return p;
+                })
+                // Simular un flujo de elementos grande
+                .repeat(5000);
+
+        // Suscribirse para imprimir los nombres de los productos - observer one
+        productsFlux.subscribe(p -> log.info(p.getName()));
+
+        model.addAttribute("title", "Product List");
+        // observer two - thymeleaf view
+        // se modifica el buffer de datos para que Thymeleaf procese los elementos a medida que llegan
+        // creando "chunks" o bloques de datos, recomendado para grandes cantidades de informacion
+        model.addAttribute("products", productsFlux);
+        return "products/list-chunked";
     }
 }

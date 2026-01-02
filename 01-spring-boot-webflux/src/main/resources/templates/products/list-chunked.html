@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title th:text="${title}">Lista de Productos</title>
+    <style type="text/css" th:src="@{/css/styles.css}"></style>
+</head>
+<body>
+    <h1 th:text="${title}">Lista de Productos</h1>
+
+    <div>
+        <a th:href="@{/}">Inicio</a>
+        &nbsp;|&nbsp;
+        <a th:href="@{/products/new}">Nuevo producto</a>
+    </div>
+
+    <br />
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Creado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="product, iterStat : ${products}">
+                <td th:text="${iterStat.count}">1</td>
+                <td th:text="${product.name}">Nombre</td>
+                <td th:text="${product.price}">0.0</td>
+                <td th:text="${#dates.format(product.createAt, 'dd-MM-yyyy')}">01-01-2020</td>
+                <td class="actions">
+                    <a th:href="@{/products/{id}(id=${product.id})}">Ver</a>
+                    <a th:href="@{/products/edit/{id}(id=${product.id})}">Editar</a>
+                </td>
+            </tr>
+            <!-- Mostrar un mensaje si no hay productos -->
+            <tr th:if="${#lists.isEmpty(products)}">
+                <td colspan="5">No hay productos para mostrar.</td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+</html>
+
+
