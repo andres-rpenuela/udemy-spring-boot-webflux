@@ -2,6 +2,7 @@ package com.codearp.springboot.reactor.controllers;
 
 import com.codearp.springboot.reactor.dao.ProductDao;
 import com.codearp.springboot.reactor.models.documents.Product;
+import com.codearp.springboot.reactor.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -15,19 +16,14 @@ import reactor.core.publisher.Flux;
 @Slf4j
 public class ProductController {
 
-    private final ProductDao productDao;
+    private final ProductService productService;
 
 
     @GetMapping("/products")
     public String listProducts(Model model) {
 
         // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productDao.findAll();
-        productsFlux = productsFlux
-                .map(p -> {
-                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
-                    return p;
-                });
+        Flux<Product> productsFlux = productService.findAllUpperCaseNames()
 
         // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
@@ -42,11 +38,7 @@ public class ProductController {
     public String listProductsDataDriverBloqueante(Model model) {
 
         // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productDao.findAll()
-                .map(p -> {
-                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
-                    return p;
-                })
+        Flux<Product> productsFlux = productService.findAllUpperCaseNames()
                 // Simular retardo de 1 segundo por elemento
                 // Para ver el efecto del data driver en la vista
                 // esto hace que los elementos se emitan uno a uno con un retraso
@@ -68,11 +60,7 @@ public class ProductController {
     public String listProductsDataDriver(Model model) {
 
         // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productDao.findAll()
-                .map(p -> {
-                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
-                    return p;
-                })
+        Flux<Product> productsFlux = productService.findAllUpperCaseNames()
                 // Simular retardo de 1 segundo por elemento
                 // Para ver el efecto del data driver en la vista
                 // esto hace que los elementos se emitan uno a uno con un retraso
@@ -95,13 +83,8 @@ public class ProductController {
     public String listProductsChunked(Model model) {
 
         // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productDao.findAll()
-                .map(p -> {
-                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
-                    return p;
-                })
-                // Simular un flujo de elementos grande
-                .repeat(5000);
+        // Simular un flujo de elementos grande
+        Flux<Product> productsFlux = productService.findAllUpperCaseNamesRepeat();
 
         // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
@@ -118,13 +101,8 @@ public class ProductController {
     public String listProductsChunkedViewNames(Model model) {
 
         // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productDao.findAll()
-                .map(p -> {
-                    p.setName(p.getName() != null ? p.getName().toUpperCase() : null);
-                    return p;
-                })
-                // Simular un flujo de elementos grande
-                .repeat(5000);
+        // Simular un flujo de elementos grande
+        Flux<Product> productsFlux = productService.findAllUpperCaseNamesRepeat();
 
         // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
