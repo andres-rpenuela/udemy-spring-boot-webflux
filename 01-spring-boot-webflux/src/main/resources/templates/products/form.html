@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${title}">New Product</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body>
+<div class="container">
+    <h1 th:text="${title}">New Product</h1>
+
+    <!-- Formulario simple para crear/editar un Product -->
+    <form th:action="@{/form}" th:object="${product}" method="post">
+        <div>
+            <label for="name">Nombre</label>
+            <input type="text" id="name" th:field="*{name}" placeholder="Nombre del producto" required />
+        </div>
+
+        <div>
+            <label for="price">Precio</label>
+            <input type="number" step="0.01" id="price" th:field="*{price}" placeholder="0.00" required />
+        </div>
+
+        <div>
+            <label for="createAt">Fecha</label>
+            <input type="date" id="createAt" th:field="*{createAt}" required />
+        </div>
+        <!-- Si el producto tiene id (edición) lo enviamos como campo oculto -->
+        <input type="hidden" th:field="*{id}" />
+
+        <div>
+            <button type="submit">Guardar</button>
+            <a th:href="@{/products}">Cancelar</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>
+
+
+
+

@@ -1,15 +1,23 @@
 package com.codearp.springboot.reactor.controllers;
 
-import com.codearp.springboot.reactor.dao.ProductDao;
 import com.codearp.springboot.reactor.models.documents.Product;
 import com.codearp.springboot.reactor.services.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.thymeleaf.spring6.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @Controller
 @RequiredArgsConstructor
@@ -18,12 +26,19 @@ public class ProductController {
 
     private final ProductService productService;
 
+//    @InitBinder
+//    public void initBinder(WebDataBinder binder) {
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+//        sdf.setLenient(false);
+//        binder.registerCustomEditor(Date.class, new CustomDateEditor(sdf, true));
+//    }
+
 
     @GetMapping("/products")
     public String listProducts(Model model) {
 
         // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productService.findAllUpperCaseNames()
+        Flux<Product> productsFlux = productService.findAllUpperCaseNames();
 
         // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
@@ -113,5 +128,21 @@ public class ProductController {
         // creando "chunks" o bloques de datos, recomendado para grandes cantidades de informacion
         model.addAttribute("products", productsFlux);
         return "products/list-chunked";
+    }
+
+    @GetMapping("/form")
+    public String newProductForm(Model model) {
+        model.addAttribute("title", "New Product");
+        model.addAttribute("product", new Product());
+        return "products/form";
+    }
+
+    @PostMapping("/form")
+    public Mono<String> saveProduct(@ModelAttribute Product product) {
+        // Guardar el producto y redirigir a la lista
+        return productService.save(product)
+                .doOnNext(p -> log.info("Created product: " + p.getName()))
+                //.then( Mono.just("redirect:/products"))
+                .thenReturn("redirect:/products");
     }
 }

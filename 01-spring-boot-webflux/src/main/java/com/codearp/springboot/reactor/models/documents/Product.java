@@ -2,6 +2,7 @@ package com.codearp.springboot.reactor.models.documents;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 import java.util.Objects;
@@ -16,6 +17,7 @@ public class Product {
 
     private Double price;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date createAt;
 
     public Product() {
@@ -90,6 +92,7 @@ public class Product {
         }
 
         public ProductBuilder withCreateAt(Date createAt) {
+            this.createAt = createAt;
             return this;
         }
 
