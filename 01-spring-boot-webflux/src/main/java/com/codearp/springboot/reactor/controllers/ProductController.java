@@ -8,10 +8,8 @@ import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.support.SessionStatus;
 import org.thymeleaf.spring6.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -22,6 +20,7 @@ import java.util.Date;
 @Controller
 @RequiredArgsConstructor
 @Slf4j
+@SessionAttributes("product") // Cada vez que se cargue un producto en el modelo, se guardará en sesión
 public class ProductController {
 
     private final ProductService productService;
@@ -130,18 +129,41 @@ public class ProductController {
         return "products/list-chunked";
     }
 
-    @GetMapping("/form")
+    @GetMapping("/products/form")
     public String newProductForm(Model model) {
         model.addAttribute("title", "New Product");
         model.addAttribute("product", new Product());
         return "products/form";
     }
 
-    @PostMapping("/form")
-    public Mono<String> saveProduct(@ModelAttribute Product product) {
+    @PostMapping("/products/form")
+    public Mono<String> saveProduct(@ModelAttribute Product product, SessionStatus status) {
         // Guardar el producto y redirigir a la lista
         return productService.save(product)
                 .doOnNext(p -> log.info("Created product: " + p.getName()))
+                .doOnSuccess(p -> status.setComplete())
+                //.then( Mono.just("redirect:/products"))
+                .thenReturn("redirect:/products");
+    }
+
+    @GetMapping({"/products/edit/{id}", "/products/form/{id}"})
+    public Mono<String> editProductForm(@PathVariable("id") String id, Model model){
+        return productService.findById(id)
+                .doOnNext(p -> log.info("Editing product: " + p.getName()))
+                .flatMap( p -> {
+                    model.addAttribute("title", "Edit Product");
+                    model.addAttribute("product", p);
+                    return Mono.just("products/form");
+                });
+    }
+
+
+    @RequestMapping(value = "/products/form/{id}", method = { RequestMethod.POST, RequestMethod.PUT } )
+    public Mono<String> updateProduct(@ModelAttribute Product product, @PathVariable("id") String id, SessionStatus status) {
+        // Actualizar el producto y redirigir a la lista
+        return productService.update(product, id)
+                .doOnNext(p -> log.info("Updated product: " + p.getName()))
+                .doOnSuccess( p -> status.setComplete())
                 //.then( Mono.just("redirect:/products"))
                 .thenReturn("redirect:/products");
     }
