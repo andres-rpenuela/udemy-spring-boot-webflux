@@ -154,7 +154,8 @@ public class ProductController {
                     model.addAttribute("title", "Edit Product");
                     model.addAttribute("product", p);
                     return Mono.just("products/form");
-                });
+                })
+                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
     }
 
 
@@ -165,6 +166,19 @@ public class ProductController {
                 .doOnNext(p -> log.info("Updated product: " + p.getName()))
                 .doOnSuccess( p -> status.setComplete())
                 //.then( Mono.just("redirect:/products"))
-                .thenReturn("redirect:/products");
+                .thenReturn("redirect:/products")
+                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found+"+ex.getMessage()));
+    }
+
+    // metodo handler mas reactivo
+    @RequestMapping(value = "/products/form-v2/{id}", method = { RequestMethod.POST, RequestMethod.PUT } )
+    public Mono<String> updateProductv2(@ModelAttribute Product product, @PathVariable("id") String id, SessionStatus status) {
+        // Actualizar el producto y redirigir a la lista
+        return productService.update(product, id)
+                .doOnNext(p -> log.info("Updated product: " + p.getName()))
+                .doOnSuccess( p -> status.setComplete())
+                //.then( Mono.just("redirect:/products"))
+                .thenReturn("redirect:/products?success=Product+Updated")
+                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
     }
 }

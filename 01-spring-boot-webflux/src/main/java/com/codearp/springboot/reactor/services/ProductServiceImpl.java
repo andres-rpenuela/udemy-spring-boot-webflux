@@ -43,6 +43,7 @@ public class ProductServiceImpl implements ProductService {
     public Mono<Product> findById(String id) {
         return productDao.findById(id)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found")));
+                //.switchIfEmpty(Mono.error(new InterruptedException("Product not found")));
     }
 
     @Override
@@ -59,7 +60,9 @@ public class ProductServiceImpl implements ProductService {
                     p.setPrice(product.getPrice());
                     return productDao.save(p);
                 })
+                //.switchIfEmpty(Mono.error(new InterruptedException("Product not found")));
                 .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found")));
+
     }
 
     @Override

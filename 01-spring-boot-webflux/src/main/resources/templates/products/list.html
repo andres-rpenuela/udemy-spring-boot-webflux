@@ -7,6 +7,15 @@
     <style type="text/css" th:src="@{/css/styles.css}"></style>
 </head>
 <body>
+    <!-- Mostrar mensaje de error si existe en el patch con el nombre "error" => ?error:=-->
+    <div th:if="${param.error}">
+        <p class="error" th:text="${param.error}">Error message</p>
+    </div>
+    <!-- Mostrar mensaje de error si existe en el patch con el nombre "succes" => ?succes:=-->
+    <div th:if="${param.succes}">
+        <p class="error" th:text="${param.succes}">Error message</p>
+    </div>
+
     <h1 th:text="${title}">Lista de Productos</h1>
 
     <div>
