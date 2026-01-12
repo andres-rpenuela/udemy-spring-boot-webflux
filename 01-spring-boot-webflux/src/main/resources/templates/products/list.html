@@ -45,6 +45,8 @@
                 <td class="actions">
                     <a th:href="@{/products/{id}(id=${product.id})}">Ver</a>
                     <a th:href="@{/products/edit/{id}(id=${product.id})}">Editar</a>
+                    <a th:href="@{/products/eliminar/{id}(id=${product.id})}"
+                        onclick="return confirm('Estas seguro que quieres eliminar')">Eliminar</a>
                 </td>
             </tr>
             <!-- Mostrar un mensaje si no hay productos -->

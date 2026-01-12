@@ -142,6 +142,27 @@ public class ProductController {
     }
 
     // ------------------------------------------------------------
+    // ELIMINAR PRODUCTO
+    // ------------------------------------------------------------
+    @RequestMapping(value="/products/eliminar/{id}", method = { RequestMethod.GET, RequestMethod.DELETE } )
+    public Mono<String> deleteProduct(@PathVariable("id") String id) {
+        // opcion 1
+//        return productService.findById(id)
+//                .map(Product::getId)
+//                .flatMap(productService::delete)
+//                .doOnSuccess(v -> log.info("Deleted product with id: {}", id))
+//                .thenReturn("redirect:/products?success=Product+Deleted")
+//                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
+
+        // opcion 2
+        return productService.delete(id)
+                .doOnSuccess(v -> log.info("Deleted product with id: {}", id))
+                .thenReturn("redirect:/products?success=Product+Deleted")
+                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
+
+    }
+
+    // ------------------------------------------------------------
     // NOTAS IMPORTANTES WEBFLUX
     // ------------------------------------------------------------
 
