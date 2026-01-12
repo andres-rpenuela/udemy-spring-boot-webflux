@@ -48,6 +48,11 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Mono<Product> save(Product product) {
+
+        if( product.getCreateAt() == null ) {
+            product.setCreateAt(new java.util.Date());
+        }
+
         return productDao.save(product);
     }
 

@@ -1,5 +1,6 @@
 package com.codearp.springboot.reactor.models.documents;
 
+import jakarta.validation.constraints.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,8 +14,13 @@ public class Product {
     @Id
     private String id;
 
+    @NotBlank
+    @Size(min = 3, max = 50)
     private String name;
 
+    @NotNull
+    @PositiveOrZero
+    @DecimalMin("0.01")
     private Double price;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd")
@@ -101,4 +107,5 @@ public class Product {
 
         }
     }
+
 }

@@ -2,25 +2,22 @@ package com.codearp.springboot.reactor.controllers;
 
 import com.codearp.springboot.reactor.models.documents.Product;
 import com.codearp.springboot.reactor.services.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.propertyeditors.CustomDateEditor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.WebDataBinder;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
 import org.thymeleaf.spring6.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 @Controller
 @RequiredArgsConstructor
 @Slf4j
-@SessionAttributes("product") // Cada vez que se cargue un producto en el modelo, se guardará en sesión
+@SessionAttributes("product") // Mantiene un producto en sesión mientras se edita/crea, no es recomendable en WebFlux
 public class ProductController {
 
     private final ProductService productService;
@@ -32,125 +29,88 @@ public class ProductController {
 //        binder.registerCustomEditor(Date.class, new CustomDateEditor(sdf, true));
 //    }
 
+    // ------------------------------------------------------------
+    // LISTADO DE PRODUCTOS
+    // ------------------------------------------------------------
 
+    // Listado normal
     @GetMapping("/products")
     public String listProducts(Model model) {
-
-        // Obtener el Flux y transformar nombres a mayúsculas
         Flux<Product> productsFlux = productService.findAllUpperCaseNames();
-
-        // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
 
         model.addAttribute("title", "Product List");
-        // observer two - thymeleaf view
         model.addAttribute("products", productsFlux);
         return "products/list";
     }
 
-    @GetMapping("/products-data-driver-bloqueante")
-    public String listProductsDataDriverBloqueante(Model model) {
-
-        // Obtener el Flux y transformar nombres a mayúsculas
-        Flux<Product> productsFlux = productService.findAllUpperCaseNames()
-                // Simular retardo de 1 segundo por elemento
-                // Para ver el efecto del data driver en la vista
-                // esto hace que los elementos se emitan uno a uno con un retraso
-                // y no todos de golpe, lo que permite ver la carga progresiva en la vista (en caso de usar clientes reactivos) o
-                // o espera para visualizar hasta que todos esten cargados (en caso de usar thymeleaf normal)
-                .delayElements(java.time.Duration.ofSeconds(1));
-
-        // Suscribirse para imprimir los nombres de los productos - observer one
-        productsFlux.subscribe(p -> log.info(p.getName()));
-
-        model.addAttribute("title", "Product List");
-        // observer two - thymeleaf view
-        model.addAttribute("products", productsFlux);
-        return "products/list";
-    }
-
-
+    // Listado con retraso simulado para ver efecto DataDriver
     @GetMapping("/products-data-driver")
     public String listProductsDataDriver(Model model) {
-
-        // Obtener el Flux y transformar nombres a mayúsculas
         Flux<Product> productsFlux = productService.findAllUpperCaseNames()
-                // Simular retardo de 1 segundo por elemento
-                // Para ver el efecto del data driver en la vista
-                // esto hace que los elementos se emitan uno a uno con un retraso
-                // y no todos de golpe, lo que permite ver la carga progresiva en la vista (en caso de usar clientes reactivos) o
-                // o espera para visualizar hasta que todos esten cargados (en caso de usar thymeleaf normal)
                 .delayElements(java.time.Duration.ofSeconds(1));
 
-        // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
 
         model.addAttribute("title", "Product List");
-        // observer two - thymeleaf view
-        // se modifica el buffer de datos para que Thymeleaf procese los elementos a medida que llegan
-        // número de elementos que se procesan en cada "chunk"
+        // ReactiveDataDriverContextVariable permite procesar los elementos a medida que llegan
         model.addAttribute("products", new ReactiveDataDriverContextVariable(productsFlux, 2));
         return "products/list";
     }
 
+    // Listado chunked (para grandes cantidades de datos)
     @GetMapping("/products-chunked")
     public String listProductsChunked(Model model) {
-
-        // Obtener el Flux y transformar nombres a mayúsculas
-        // Simular un flujo de elementos grande
         Flux<Product> productsFlux = productService.findAllUpperCaseNamesRepeat();
-
-        // Suscribirse para imprimir los nombres de los productos - observer one
         productsFlux.subscribe(p -> log.info(p.getName()));
 
         model.addAttribute("title", "Product List");
-        // observer two - thymeleaf view
-        // se modifica el buffer de datos para que Thymeleaf procese los elementos a medida que llegan
-        // creando "chunks" o bloques de datos, recomendado para grandes cantidades de informacion
         model.addAttribute("products", productsFlux);
         return "products/list";
     }
 
-    @GetMapping("/products-chunked-view-names")
-    public String listProductsChunkedViewNames(Model model) {
+    // ------------------------------------------------------------
+    // FORMULARIO DE CREACIÓN
+    // ------------------------------------------------------------
 
-        // Obtener el Flux y transformar nombres a mayúsculas
-        // Simular un flujo de elementos grande
-        Flux<Product> productsFlux = productService.findAllUpperCaseNamesRepeat();
-
-        // Suscribirse para imprimir los nombres de los productos - observer one
-        productsFlux.subscribe(p -> log.info(p.getName()));
-
-        model.addAttribute("title", "Product List");
-        // observer two - thymeleaf view
-        // se modifica el buffer de datos para que Thymeleaf procese los elementos a medida que llegan
-        // creando "chunks" o bloques de datos, recomendado para grandes cantidades de informacion
-        model.addAttribute("products", productsFlux);
-        return "products/list-chunked";
-    }
-
+    // GET formulario nuevo producto (recomendado en WebFlux)
     @GetMapping("/products/form")
-    public String newProductForm(Model model) {
-        model.addAttribute("title", "New Product");
+    public Mono<String> newProductForm(Model model) {
+
         model.addAttribute("product", new Product());
-        return "products/form";
+        model.addAttribute("title", "New Product");
+        return Mono.just("products/form");
     }
 
+    // POST crear producto (reactivo)
     @PostMapping("/products/form")
-    public Mono<String> saveProduct(@ModelAttribute Product product, SessionStatus status) {
-        // Guardar el producto y redirigir a la lista
+    public Mono<String> saveProduct(
+            @Valid @ModelAttribute("product") Product product,
+            Errors errors,
+            Model model) {
+
+        if (errors.hasErrors()) {
+            errors.getFieldErrors()
+                    .forEach(err -> log.error("Field error: {} - {}", err.getField(), err.getDefaultMessage()));
+
+            model.addAttribute("title", "New Product");
+            return Mono.just("products/form"); // Mantener la vista sin redirect
+        }
+
         return productService.save(product)
-                .doOnNext(p -> log.info("Created product: " + p.getName()))
-                .doOnSuccess(p -> status.setComplete())
-                //.then( Mono.just("redirect:/products"))
-                .thenReturn("redirect:/products");
+                .doOnNext(p -> log.info("Created product: {}", p.getName()))
+                .thenReturn("redirect:/products"); // Redirigir solo si no hay errores
     }
+
+    // ------------------------------------------------------------
+    // FORMULARIO DE EDICIÓN
+    // ------------------------------------------------------------
 
     @GetMapping({"/products/edit/{id}", "/products/form/{id}"})
     public Mono<String> editProductForm(@PathVariable("id") String id, Model model){
         return productService.findById(id)
-                .doOnNext(p -> log.info("Editing product: " + p.getName()))
-                .flatMap( p -> {
+                .doOnNext(p -> log.info("Editing product: {}", p.getName()))
+                .flatMap(p -> {
                     model.addAttribute("title", "Edit Product");
                     model.addAttribute("product", p);
                     return Mono.just("products/form");
@@ -158,27 +118,49 @@ public class ProductController {
                 .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
     }
 
-
+    // POST/PUT actualizar producto (anti-patrón: basado en redirect + BindingResult)
     @RequestMapping(value = "/products/form/{id}", method = { RequestMethod.POST, RequestMethod.PUT } )
-    public Mono<String> updateProduct(@ModelAttribute Product product, @PathVariable("id") String id, SessionStatus status) {
-        // Actualizar el producto y redirigir a la lista
-        return productService.update(product, id)
-                .doOnNext(p -> log.info("Updated product: " + p.getName()))
-                .doOnSuccess( p -> status.setComplete())
-                //.then( Mono.just("redirect:/products"))
-                .thenReturn("redirect:/products")
-                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found+"+ex.getMessage()));
-    }
+    public Mono<String> updateProduct(@Valid @ModelAttribute Product product,
+                                      Errors errors,
+                                      @PathVariable("id") String id,
+                                      Model model,
+                                      SessionStatus status) {
 
-    // metodo handler mas reactivo
-    @RequestMapping(value = "/products/form-v2/{id}", method = { RequestMethod.POST, RequestMethod.PUT } )
-    public Mono<String> updateProductv2(@ModelAttribute Product product, @PathVariable("id") String id, SessionStatus status) {
-        // Actualizar el producto y redirigir a la lista
+        if (errors.hasErrors()) {
+            errors.getFieldErrors()
+                    .forEach(err -> log.error("Field error: {} - {}", err.getField(), err.getDefaultMessage()));
+
+            model.addAttribute("title", "Edit Product");
+            return Mono.just("products/form"); // Mantener la vista sin redirect
+        }
+
         return productService.update(product, id)
-                .doOnNext(p -> log.info("Updated product: " + p.getName()))
-                .doOnSuccess( p -> status.setComplete())
-                //.then( Mono.just("redirect:/products"))
+                .doOnNext(p -> log.info("Updated product: {}", p.getName()))
+                .doOnSuccess(p -> status.setComplete())
                 .thenReturn("redirect:/products?success=Product+Updated")
                 .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
     }
+
+    // ------------------------------------------------------------
+    // NOTAS IMPORTANTES WEBFLUX
+    // ------------------------------------------------------------
+
+    /*
+     * 1️⃣ Evitar usar BindingResult, WebSession, SessionStatus → patrón MVC.
+     * 2️⃣ En WebFlux, los errores se mantienen en la misma request.
+     * 3️⃣ Redirect solo cuando la operación fue exitosa.
+     * 4️⃣ newProductForm y editProductForm pueden reutilizar la misma vista "products/form".
+     * 5️⃣ Para listas grandes: usar ReactiveDataDriverContextVariable o chunked rendering.
+     */
+
+    /**
+     * ✅ Claves para apuntes
+     *
+     * WebFlux no necesita BindingResult → usa Errors.
+     * No redirigir si hay errores, mantén la misma vista.
+     * SessionAttributes solo para mantener un producto en edición; no usar WebSession para errores.
+     * ReactiveDataDriverContextVariable → render progresivo de listas.
+     * Un solo template form sirve para crear y editar.
+     * Logs y doOnNext → útiles para debug reactivo.
+     */
 }

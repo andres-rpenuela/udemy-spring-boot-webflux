@@ -2,92 +2,165 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="es">
 <head>
     <meta charset="UTF-8" />
-    <title th:text="${title}">New Product</title>
-    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+    <title th:text="${title}">Nuevo Producto</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet">
 </head>
-<body>
-<div class="container">
-    <h1 th:text="${title}">New Product</h1>
 
-    <!-- Form para crear -->
-    <form th:if="${product.id} == null" th:action="@{/products/form}" th:object="${product}" method="post">
-        <div>
-            <label>Nombre</label>
-            <input type="text" th:field="*{name}" placeholder="Nombre del producto" required />
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+
+                    <h3 class="card-title mb-4 text-center"
+                        th:text="${product.id == null} ? 'Nuevo Producto' : 'Editar Producto'">
+                        Formulario
+                    </h3>
+
+                    <!-- FORM CREAR -->
+                    <form th:if="${product.id} == null"
+                          th:action="@{/products/form}"
+                          th:object="${product}"
+                          method="post">
+
+                        <!-- Nombre -->
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text"
+                                   th:field="*{name}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                                   placeholder="Nombre del producto">
+
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('name')}"
+                                 th:errors="*{name}">
+                                Error nombre
+                            </div>
+                        </div>
+
+                        <!-- Precio -->
+                        <div class="mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number"
+                                   step="0.01"
+                                   th:field="*{price}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('price')} ? 'is-invalid'"
+                                   placeholder="0.00">
+
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('price')}"
+                                 th:errors="*{price}">
+                                Error precio
+                            </div>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date"
+                                   th:field="*{createAt}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('createAt')} ? 'is-invalid'">
+
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('createAt')}"
+                                 th:errors="*{createAt}">
+                                Error fecha
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                Guardar
+                            </button>
+                            <a th:href="@{/products}" class="btn btn-secondary w-100">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- FORM EDITAR -->
+                    <form th:if="${product.id} != null"
+                          th:action="@{/products/form/{id}(id=${product.id})}"
+                          th:object="${product}"
+                          method="post">
+
+                        <!-- Nombre -->
+                        <div class="mb-3">
+                            <label class="form-label">Nombre</label>
+                            <input type="text"
+                                   th:field="*{name}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('name')}"
+                                 th:errors="*{name}">
+                                Error nombre
+                            </div>
+                        </div>
+
+                        <!-- Precio -->
+                        <div class="mb-3">
+                            <label class="form-label">Precio</label>
+                            <input type="number"
+                                   step="0.01"
+                                   th:field="*{price}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('price')} ? 'is-invalid'">
+
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('price')}"
+                                 th:errors="*{price}">
+                                Error precio
+                            </div>
+                        </div>
+
+                        <!-- Fecha -->
+                        <div class="mb-3">
+                            <label class="form-label">Fecha</label>
+                            <input type="date"
+                                   th:field="*{createAt}"
+                                   class="form-control"
+                                   th:classappend="${#fields.hasErrors('createAt')} ? 'is-invalid'">
+
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('createAt')}"
+                                 th:errors="*{createAt}">
+                                Error fecha
+                            </div>
+                        </div>
+
+                        <input type="hidden" th:field="*{id}" />
+                        <input type="hidden" name="_method" value="put" />
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning w-100">
+                                Actualizar
+                            </button>
+                            <a th:href="@{/products}" class="btn btn-secondary w-100">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
         </div>
-
-        <div>
-            <label>Precio</label>
-            <input type="number" step="0.01" th:field="*{price}" placeholder="0.00" required />
-        </div>
-
-        <div>
-            <label>Fecha</label>
-            <input type="date" th:field="*{createAt}" required />
-        </div>
-
-        <div>
-            <button type="submit">Guardar</button>
-            <a th:href="@{/products}">Cancelar</a>
-        </div>
-    </form>
-
-    <!-- Form para editar -->
-    <h1 th:if="${product.id} != null">Editar Producto - Form v1</h1>
-    <form th:if="${product.id} != null" th:action="@{/products/form/{id}(id=${product.id})}" th:object="${product}" method="post">
-        <div>
-            <label>Nombre</label>
-            <input type="text" th:field="*{name}" placeholder="Nombre del producto" required />
-        </div>
-
-        <div>
-            <label>Precio</label>
-            <input type="number" step="0.01" th:field="*{price}" placeholder="0.00" required />
-        </div>
-
-        <div>
-            <label>Fecha</label>
-            <input type="date" th:field="*{createAt}" required />
-        </div>
-        <!-- Si el producto tiene id (edición) lo enviamos como campo oculto -->
-        <input type="hidden" th:field="*{id}" />
-        <!-- Envío _method=put para que Spring lo trate como PUT en edición -->
-        <input type="hidden" name="_method" value="put" />
-
-        <div>
-            <button type="submit">Actualizar</button>
-            <a th:href="@{/products}">Cancelar</a>
-        </div>
-    </form>
-
-
-    <!-- Form para editar -->
-    <h1 th:if="${product.id} != null">Editar Producto - Form V2</h1>
-    <form th:if="${product.id} != null" th:action="@{/products/form-v2/{id}(id=${product.id})}" th:object="${product}" method="post">
-        <div>
-            <label>Nombre</label>
-            <input type="text" th:field="*{name}" placeholder="Nombre del producto" required />
-        </div>
-
-        <div>
-            <label>Precio</label>
-            <input type="number" step="0.01" th:field="*{price}" placeholder="0.00" required />
-        </div>
-
-        <div>
-            <label>Fecha</label>
-            <input type="date" th:field="*{createAt}" required />
-        </div>
-        <!-- Si el producto tiene id (edición) lo enviamos como campo oculto -->
-        <input type="hidden" th:field="*{id}" />
-        <!-- Envío _method=put para que Spring lo trate como PUT en edición -->
-        <input type="hidden" name="_method" value="put" />
-
-        <div>
-            <button type="submit">Actualizar</button>
-            <a th:href="@{/products}">Cancelar</a>
-        </div>
-    </form>
+    </div>
 </div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
