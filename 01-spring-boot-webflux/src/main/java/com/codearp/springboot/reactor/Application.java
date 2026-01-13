@@ -11,7 +11,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,16 +46,16 @@ public class Application implements CommandLineRunner {
         mongoTemplate.dropCollection("categories").subscribe();
         mongoTemplate.dropCollection("products").subscribe();
         Map<String, Category> categoryMap = new HashMap<>();
-        categoryMap.put( Category.CategoryNames.ELECTRONICS.name(), Category.builder().name( Category.CategoryNames.ELECTRONICS ).build() );
-        categoryMap.put( Category.CategoryNames.HOME.name(), Category.builder().name( Category.CategoryNames.HOME ).build() );
-        categoryMap.put( Category.CategoryNames.BEAUTY.name(), Category.builder().name( Category.CategoryNames.BEAUTY ).build() );
-        categoryMap.put( Category.CategoryNames.SPORTS.name(), Category.builder().name( Category.CategoryNames.SPORTS ).build() );
-        categoryMap.put( Category.CategoryNames.TOYS.name(), Category.builder().name( Category.CategoryNames.TOYS ).build() );
-        categoryMap.put( Category.CategoryNames.AUTOMOTIVE.name(), Category.builder().name( Category.CategoryNames.AUTOMOTIVE ).build() );
-        categoryMap.put( Category.CategoryNames.FASHION.name(), Category.builder().name( Category.CategoryNames.FASHION ).build() );
-        categoryMap.put( Category.CategoryNames.BOOKS.name(), Category.builder().name( Category.CategoryNames.BOOKS ).build() );
-        categoryMap.put( Category.CategoryNames.MUSIC.name(), Category.builder().name( Category.CategoryNames.MUSIC ).build() );
-        categoryMap.put( Category.CategoryNames.GROCERY.name(), Category.builder().name( Category.CategoryNames.GROCERY ).build() );
+        categoryMap.put( Category.CategoryName.ELECTRONICS.name(), Category.builder().name( Category.CategoryName.ELECTRONICS ).build() );
+        categoryMap.put( Category.CategoryName.HOME.name(), Category.builder().name( Category.CategoryName.HOME ).build() );
+        categoryMap.put( Category.CategoryName.BEAUTY.name(), Category.builder().name( Category.CategoryName.BEAUTY ).build() );
+        categoryMap.put( Category.CategoryName.SPORTS.name(), Category.builder().name( Category.CategoryName.SPORTS ).build() );
+        categoryMap.put( Category.CategoryName.TOYS.name(), Category.builder().name( Category.CategoryName.TOYS ).build() );
+        categoryMap.put( Category.CategoryName.AUTOMOTIVE.name(), Category.builder().name( Category.CategoryName.AUTOMOTIVE ).build() );
+        categoryMap.put( Category.CategoryName.FASHION.name(), Category.builder().name( Category.CategoryName.FASHION ).build() );
+        categoryMap.put( Category.CategoryName.BOOKS.name(), Category.builder().name( Category.CategoryName.BOOKS ).build() );
+        categoryMap.put( Category.CategoryName.MUSIC.name(), Category.builder().name( Category.CategoryName.MUSIC ).build() );
+        categoryMap.put( Category.CategoryName.GROCERY.name(), Category.builder().name( Category.CategoryName.GROCERY ).build() );
 
 
 
@@ -69,14 +68,14 @@ public class Application implements CommandLineRunner {
         }).thenMany(// Ejecuamos otro flujo de tipo Flux despues (then es para Mono)
             // Insertamos productos
             Flux.just(
-                    Product.builder().withName("TV Panasonic Pantalla LCD").withPrice(456.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
-                    Product.builder().withName("Sony Camara HD Digital").withPrice(177.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
-                    Product.builder().withName("Apple iPod").withPrice(46.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
-                    Product.builder().withName("Sony Notebook").withPrice(846.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
-                    Product.builder().withName("Hewlett Packard Multifuncional").withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).withPrice(200.89).build(),
-                    Product.builder().withName("Bianchi Bicicleta").withPrice(70.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
-                    Product.builder().withName("HP Notebook Omen 17").withPrice(2500.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
-                    Product.builder().withName("Mica Cómoda 5 Cajones").withPrice(150.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build()
+                    Product.builder().withName("TV Panasonic Pantalla LCD").withPrice(456.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Sony Camara HD Digital").withPrice(177.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Apple iPod").withPrice(46.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Sony Notebook").withPrice(846.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Hewlett Packard Multifuncional").withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).withPrice(200.89).build(),
+                    Product.builder().withName("Bianchi Bicicleta").withPrice(70.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("HP Notebook Omen 17").withPrice(2500.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Mica Cómoda 5 Cajones").withPrice(150.89).withCategory( categoryMap.get( Category.CategoryName.ELECTRONICS.name() ) ).build()
             ).flatMap(productDao::save)
         ) // FlatMap covierte el Mono<Product> a Product
         .subscribe(product -> {

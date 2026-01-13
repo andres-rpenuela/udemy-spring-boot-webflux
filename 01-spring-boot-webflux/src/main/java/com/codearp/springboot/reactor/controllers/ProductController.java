@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.thymeleaf.spring6.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -45,8 +46,8 @@ public class ProductController {
     // Listado normal
     @GetMapping("/products")
     public String listProducts(Model model) {
-        Flux<Product> productsFlux = productService.findAllUpperCaseNames();
-        productsFlux.subscribe(p -> log.info(p.getName()));
+        Flux<Product> productsFlux = productService.findAllUpperCaseNames()
+                .doOnNext(p -> log.info(p.getName()));
 
         model.addAttribute("title", "Product List");
         model.addAttribute("products", productsFlux);
@@ -57,9 +58,8 @@ public class ProductController {
     @GetMapping("/products-data-driver")
     public String listProductsDataDriver(Model model) {
         Flux<Product> productsFlux = productService.findAllUpperCaseNames()
-                .delayElements(java.time.Duration.ofSeconds(1));
-
-        productsFlux.subscribe(p -> log.info(p.getName()));
+                .delayElements(java.time.Duration.ofSeconds(1))
+                .doOnNext(p -> log.info(p.getName()));
 
         model.addAttribute("title", "Product List");
         // ReactiveDataDriverContextVariable permite procesar los elementos a medida que llegan
@@ -70,8 +70,8 @@ public class ProductController {
     // Listado chunked (para grandes cantidades de datos)
     @GetMapping("/products-chunked")
     public String listProductsChunked(Model model) {
-        Flux<Product> productsFlux = productService.findAllUpperCaseNamesRepeat();
-        productsFlux.subscribe(p -> log.info(p.getName()));
+        Flux<Product> productsFlux = productService.findAllUpperCaseNamesRepeat()
+                .doOnNext(p -> log.info(p.getName()));
 
         model.addAttribute("title", "Product List");
         model.addAttribute("products", productsFlux);
@@ -98,7 +98,15 @@ public class ProductController {
             Errors errors,
             Model model) {
 
-        if (errors.hasErrors()) {
+        if (errors.hasErrors() || product.getCategory() == null || product.getCategory().isEmpty() ) {
+
+            if( product.getCategory() == null || product.getCategory().isEmpty() ) {
+                log.error("Field error: category - Category is required");
+                // No se puede modificar la colección retornada por getFieldErrors() (es inmodificable).
+                // Usar rejectValue para registrar un error de campo correctamente.
+                errors.rejectValue("category", "required", "Category is required");
+            }
+
             errors.getFieldErrors()
                     .forEach(err -> log.error("Field error: {} - {}", err.getField(), err.getDefaultMessage()));
 
@@ -106,9 +114,19 @@ public class ProductController {
             return Mono.just("products/form"); // Mantener la vista sin redirect
         }
 
+        if( product.getCreateAt() == null ) {
+            product.setCreateAt(new java.util.Date());
+        }
+
+        // Dejar que el servicio gestione la asociación/validación de categoría y el guardado
         return productService.save(product)
                 .doOnNext(p -> log.info("Created product: {}", p.getName()))
-                .thenReturn("redirect:/products"); // Redirigir solo si no hay errores
+                .thenReturn("redirect:/products?success=producto+guardado+con+exito")
+                .onErrorResume(ResponseStatusException.class, ex -> {
+                    model.addAttribute("title", "New Product");
+                    model.addAttribute("error", ex.getReason());
+                    return Mono.just("products/form");
+                });
     }
 
     // ------------------------------------------------------------
@@ -183,7 +201,7 @@ public class ProductController {
      * 5️⃣ Para listas grandes: usar ReactiveDataDriverContextVariable o chunked rendering.
      */
 
-    /**
+    /*
      * ✅ Claves para apuntes
      *
      * WebFlux no necesita BindingResult → usa Errors.

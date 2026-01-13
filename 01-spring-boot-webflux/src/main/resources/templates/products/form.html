@@ -80,16 +80,17 @@
                         <div class="d-flex gap-2">
                             <select th:field=" *{category.id}"
                                     class="form-select"
-                                    th:classappend="${#fields.hasErrors('category.id')} ? 'is-invalid'">
+                                    th:classappend="${#fields.hasErrors('category')} ? 'is-invalid'">
+                                <option value="" selected>-- Seleccione una categoria --</option>
                                 <option th:each="category : ${categories}"
                                         th:value="${category.id}"
                                         th:text="${category.name}">
                                     Categoria
                                 </option>
                             </select>
-                            <small th:if="${#fields.hasErrors('category.id')}"
+                            <small th:if="${#fields.hasErrors('category')}"
                                    class="text-danger"
-                                   th:errors="*{category.id}">
+                                   th:errors="*{category}">
                                 Error categoria
                             </small>
                         </div>

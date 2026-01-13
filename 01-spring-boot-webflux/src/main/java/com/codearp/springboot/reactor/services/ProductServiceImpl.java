@@ -1,6 +1,7 @@
 package com.codearp.springboot.reactor.services;
 
 import com.codearp.springboot.reactor.dao.ProductDao;
+import com.codearp.springboot.reactor.models.documents.Category;
 import com.codearp.springboot.reactor.models.documents.Product;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ import reactor.core.publisher.Mono;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductDao productDao;
-
+    private final CategoryService categoryService;
 
     @Override
     public Flux<Product> findAll() {
@@ -53,7 +54,27 @@ public class ProductServiceImpl implements ProductService {
             product.setCreateAt(new java.util.Date());
         }
 
-        return productDao.save(product);
+        // Si no hay categoría en el producto, simplemente guardamos el producto.
+        if (product.getCategory() == null) {
+            return productDao.save(product);
+        }
+
+        // Si la categoría existe pero NO trae id -> no crearla: guardar producto sin categoría
+        String catId = product.getCategory().getId();
+
+        if (catId == null || catId.trim().isEmpty()) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Category ID is required"));
+        }
+
+        // Si viene id: intentar obtenerla; si no existe, devolver 404
+        Mono<Category> categoryMono = categoryService.findCategoryById(catId)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found")));
+
+        // Componer: una vez que tengamos la categoría, asignarla y guardar el producto.
+        return categoryMono.flatMap(cat -> {
+            product.setCategory(cat);
+            return productDao.save(product);
+        });
     }
 
     @Override

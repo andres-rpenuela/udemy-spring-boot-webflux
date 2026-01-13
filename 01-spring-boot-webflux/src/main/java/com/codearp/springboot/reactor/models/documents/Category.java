@@ -1,10 +1,7 @@
 package com.codearp.springboot.reactor.models.documents;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Objects;
 
@@ -12,7 +9,7 @@ import java.util.Objects;
 public class Category {
 
     // Enum definido dentro de la clase (puede extraerse si se prefiere)
-    public enum CategoryNames {
+    public enum CategoryName {
         ELECTRONICS,
         FASHION,
         HOME,
@@ -27,14 +24,18 @@ public class Category {
 
     @Id
     private String id;
-    private CategoryNames name;
+    private CategoryName name;
 
     public Category() {
     }
 
-    public Category(String id, CategoryNames name) {
+    public Category(String id, CategoryName name) {
         this.id = id;
         this.name = name;
+    }
+
+    public boolean isEmpty() {
+        return this.id == null || ( this.name == null || this.name.name().isEmpty() ) ;
     }
 
     public String getId() {
@@ -44,11 +45,11 @@ public class Category {
         this.id = id;
     }
 
-    public CategoryNames getName() {
+    public CategoryName getName() {
         return name;
     }
 
-    public void setName(CategoryNames name) {
+    public void setName(CategoryName name) {
         this.name = name;
     }
     public String toString() {
@@ -72,7 +73,7 @@ public class Category {
 
     public static class CategoryBuilder {
         private String id;
-        private CategoryNames name;
+        private CategoryName name;
 
         public CategoryBuilder() {
         }
@@ -82,7 +83,7 @@ public class Category {
             return this;
         }
 
-        public CategoryBuilder name(CategoryNames name) {
+        public CategoryBuilder name(CategoryName name) {
             this.name = name;
             return this;
         }
