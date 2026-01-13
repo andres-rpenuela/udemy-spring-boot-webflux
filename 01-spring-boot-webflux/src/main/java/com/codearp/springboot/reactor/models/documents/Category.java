@@ -1,5 +1,6 @@
 package com.codearp.springboot.reactor.models.documents;
 
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -24,6 +25,8 @@ public class Category {
 
     @Id
     private String id;
+
+    @NotNull
     private CategoryName name;
 
     public Category() {

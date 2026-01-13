@@ -1,5 +1,6 @@
 package com.codearp.springboot.reactor.models.documents;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -26,7 +27,9 @@ public class Product {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date createAt;
 
+    @Valid
     private Category category;
+
     public Product() {
     }
 
