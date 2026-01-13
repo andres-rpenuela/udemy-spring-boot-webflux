@@ -26,6 +26,7 @@ public class Product {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date createAt;
 
+    private Category category;
     public Product() {
     }
 
@@ -34,6 +35,14 @@ public class Product {
         this.name = name;
         this.price = price;
         this.createAt = Objects.requireNonNullElse( createAt, new Date());
+    }
+
+    public Product(String id, String name, Double price, Date createAt,Category category) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.createAt = Objects.requireNonNullElse( createAt, new Date());
+        this.category = category;
     }
 
     public String getId() {
@@ -68,6 +77,14 @@ public class Product {
         this.createAt = createAt;
     }
 
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
+    }
+
     public static ProductBuilder builder() {
         return new ProductBuilder();
     }
@@ -77,6 +94,7 @@ public class Product {
         private String name;
         private Double price;
         private Date createAt;
+        private Category category;
 
         public ProductBuilder() {
 
@@ -102,9 +120,12 @@ public class Product {
             return this;
         }
 
+        public ProductBuilder withCategory(Category category) {
+            this.category = category;
+            return this;
+        }
         public Product build() {
-            return new Product(id, name, price, createAt);
-
+            return new Product(id, name, price, createAt, category);
         }
     }
 

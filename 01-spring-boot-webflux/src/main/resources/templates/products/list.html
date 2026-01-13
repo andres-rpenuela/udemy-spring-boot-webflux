@@ -33,6 +33,7 @@
                 <th>Nombre</th>
                 <th>Precio</th>
                 <th>Creado</th>
+                <th>Categoria</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -42,6 +43,7 @@
                 <td th:text="${product.name}">Nombre</td>
                 <td th:text="${product.price}">0.0</td>
                 <td th:text="${#dates.format(product.createAt, 'dd-MM-yyyy')}">01-01-2020</td>
+                <td th:text="${product.category != null ? product.category.name : 'Sin categoria'}">Categoria</td>
                 <td class="actions">
                     <a th:href="@{/products/{id}(id=${product.id})}">Ver</a>
                     <a th:href="@{/products/edit/{id}(id=${product.id})}">Editar</a>

@@ -1,6 +1,8 @@
 package com.codearp.springboot.reactor.controllers;
 
+import com.codearp.springboot.reactor.models.documents.Category;
 import com.codearp.springboot.reactor.models.documents.Product;
+import com.codearp.springboot.reactor.services.CategoryService;
 import com.codearp.springboot.reactor.services.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import reactor.core.publisher.Mono;
 public class ProductController {
 
     private final ProductService productService;
+    private final CategoryService categoryService;
 
 //    @InitBinder
 //    public void initBinder(WebDataBinder binder) {
@@ -28,6 +31,12 @@ public class ProductController {
 //        sdf.setLenient(false);
 //        binder.registerCustomEditor(Date.class, new CustomDateEditor(sdf, true));
 //    }
+
+    // AÑadir las categoriasnames  un selct de la vista mediante el modelo
+    @ModelAttribute("categories")
+    public Flux<Category> recoverCategories() {
+        return categoryService.findAllCategories();
+    }
 
     // ------------------------------------------------------------
     // LISTADO DE PRODUCTOS

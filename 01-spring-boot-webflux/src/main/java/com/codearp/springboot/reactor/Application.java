@@ -1,6 +1,8 @@
 package com.codearp.springboot.reactor;
 
+import com.codearp.springboot.reactor.models.documents.Category;
 import com.codearp.springboot.reactor.models.documents.Product;
+import com.mongodb.client.MongoClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +11,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SpringBootApplication
 @RequiredArgsConstructor
@@ -16,9 +22,11 @@ import reactor.core.publisher.Flux;
 public class Application implements CommandLineRunner {
 
     private final com.codearp.springboot.reactor.dao.ProductDao productDao;
+    private final com.codearp.springboot.reactor.dao.CategoryDao categoryDao;
 
     // Para borrar la colección al iniciar la aplicación
     private final ReactiveMongoTemplate mongoTemplate;
+    private final MongoClient mongo;
 
     @Value("${app.debug:false}")
     private boolean debug;
@@ -35,23 +43,45 @@ public class Application implements CommandLineRunner {
         }
 
         log.info("Inicializando datos de prueba...");
-
+        // Borramos la colección antes de insertar los datos
+        mongoTemplate.dropCollection("categories").subscribe();
         mongoTemplate.dropCollection("products").subscribe();
+        Map<String, Category> categoryMap = new HashMap<>();
+        categoryMap.put( Category.CategoryNames.ELECTRONICS.name(), Category.builder().name( Category.CategoryNames.ELECTRONICS ).build() );
+        categoryMap.put( Category.CategoryNames.HOME.name(), Category.builder().name( Category.CategoryNames.HOME ).build() );
+        categoryMap.put( Category.CategoryNames.BEAUTY.name(), Category.builder().name( Category.CategoryNames.BEAUTY ).build() );
+        categoryMap.put( Category.CategoryNames.SPORTS.name(), Category.builder().name( Category.CategoryNames.SPORTS ).build() );
+        categoryMap.put( Category.CategoryNames.TOYS.name(), Category.builder().name( Category.CategoryNames.TOYS ).build() );
+        categoryMap.put( Category.CategoryNames.AUTOMOTIVE.name(), Category.builder().name( Category.CategoryNames.AUTOMOTIVE ).build() );
+        categoryMap.put( Category.CategoryNames.FASHION.name(), Category.builder().name( Category.CategoryNames.FASHION ).build() );
+        categoryMap.put( Category.CategoryNames.BOOKS.name(), Category.builder().name( Category.CategoryNames.BOOKS ).build() );
+        categoryMap.put( Category.CategoryNames.MUSIC.name(), Category.builder().name( Category.CategoryNames.MUSIC ).build() );
+        categoryMap.put( Category.CategoryNames.GROCERY.name(), Category.builder().name( Category.CategoryNames.GROCERY ).build() );
 
-        Flux.just(
-                Product.builder().withName("TV Panasonic Pantalla LCD").withPrice(456.89).build(),
-                Product.builder().withName("Sony Camara HD Digital").withPrice(177.89).build(),
-                Product.builder().withName("Apple iPod").withPrice(46.89).build(),
-                Product.builder().withName("Sony Notebook").withPrice(846.89).build(),
-                Product.builder().withName("Hewlett Packard Multifuncional").withPrice(200.89).build(),
-                Product.builder().withName("Bianchi Bicicleta").withPrice(70.89).build(),
-                Product.builder().withName("HP Notebook Omen 17").withPrice(2500.89).build(),
-                Product.builder().withName("Mica Cómoda 5 Cajones").withPrice(150.89).build()
-        ).flatMap(productDao::save) // FlatMap covierte el Mono<Product> a Product
-             .subscribe(product -> {
-                    log.info("Producto creado: " + product.getName() + ", Precio: " + product.getPrice());
 
-        });
 
+        // Insertamos categorías
+        Flux.just( categoryMap  ).flatMap( map -> {
+            return categoryDao.saveAll( map.values() );
+        }).doOnNext(category -> {
+                categoryMap.put(category.getName().name(), category);
+                log.info("Categoría creada: " + category.getName());
+        }).thenMany(// Ejecuamos otro flujo de tipo Flux despues (then es para Mono)
+            // Insertamos productos
+            Flux.just(
+                    Product.builder().withName("TV Panasonic Pantalla LCD").withPrice(456.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Sony Camara HD Digital").withPrice(177.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Apple iPod").withPrice(46.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Sony Notebook").withPrice(846.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Hewlett Packard Multifuncional").withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).withPrice(200.89).build(),
+                    Product.builder().withName("Bianchi Bicicleta").withPrice(70.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("HP Notebook Omen 17").withPrice(2500.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build(),
+                    Product.builder().withName("Mica Cómoda 5 Cajones").withPrice(150.89).withCategory( categoryMap.get( Category.CategoryNames.ELECTRONICS.name() ) ).build()
+            ).flatMap(productDao::save)
+        ) // FlatMap covierte el Mono<Product> a Product
+        .subscribe(product -> {
+                log.info("Producto creado: " + product.getName() + ", Precio: " + product.getPrice() + " Categoria: " + product.getCategory().getName() );
+
+            });
     }
 }
