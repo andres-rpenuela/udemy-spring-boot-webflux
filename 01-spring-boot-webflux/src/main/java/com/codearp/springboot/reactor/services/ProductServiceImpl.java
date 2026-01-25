@@ -80,10 +80,22 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Mono<Product> update(Product product, String id) {
         // Devolver el flujo resultante: si existe, actualizar y guardar; si no existe, devolver error 404
+
         return productDao.findById(id)
                 .flatMap(p -> {
                     p.setName(product.getName());
                     p.setPrice(product.getPrice());
+                    p.setPicture(product.getPicture());
+
+                    if( product.getCategory().getId() != p.getCategory().getId() ) {
+                        // Si la categoría ha cambiado, validar que la nueva exista
+                        return categoryService.findCategoryById(product.getCategory().getId())
+                                .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found")))
+                                .flatMap(cat -> {
+                                    p.setCategory(cat);
+                                    return productDao.save(p);
+                                });
+                    }
                     return productDao.save(p);
                 })
                 //.switchIfEmpty(Mono.error(new InterruptedException("Product not found")));

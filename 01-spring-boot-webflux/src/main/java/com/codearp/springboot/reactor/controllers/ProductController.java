@@ -1,5 +1,6 @@
 package com.codearp.springboot.reactor.controllers;
 
+import com.codearp.springboot.reactor.facade.FileStorageFacade;
 import com.codearp.springboot.reactor.models.documents.Category;
 import com.codearp.springboot.reactor.models.documents.Product;
 import com.codearp.springboot.reactor.services.CategoryService;
@@ -7,15 +8,19 @@ import com.codearp.springboot.reactor.services.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.SessionStatus;
-import org.springframework.web.server.ResponseStatusException;
 import org.thymeleaf.spring6.context.webflux.ReactiveDataDriverContextVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.UUID;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,6 +30,7 @@ public class ProductController {
 
     private final ProductService productService;
     private final CategoryService categoryService;
+    private final FileStorageFacade fileStorageFacade;
 
 //    @InitBinder
 //    public void initBinder(WebDataBinder binder) {
@@ -91,11 +97,20 @@ public class ProductController {
         return Mono.just("products/form");
     }
 
+    @GetMapping("/products/form-img")
+    public Mono<String> newProductWithImgForm(Model model) {
+
+        model.addAttribute("product", new Product());
+        model.addAttribute("title", "New Product");
+        return Mono.just("products/form-img");
+    }
+
     // POST crear producto (reactivo)
-    @PostMapping("/products/form")
+    @PostMapping(value = "/products/form", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE,MediaType.MULTIPART_FORM_DATA_VALUE})
     public Mono<String> saveProduct(
             @Valid @ModelAttribute("product") Product product,
             Errors errors,
+            @RequestPart(name = "file", required = false) FilePart file,
             Model model) {
 
         if (errors.hasErrors() || product.getCategory() == null || product.getCategory().isEmpty() ) {
@@ -111,21 +126,65 @@ public class ProductController {
                     .forEach(err -> log.error("Field error: {} - {}", err.getField(), err.getDefaultMessage()));
 
             model.addAttribute("title", "New Product");
-            return Mono.just("products/form"); // Mantener la vista sin redirect
+
+            if(file != null && file.filename() != null && !file.filename().trim().isEmpty()) {
+                return Mono.just("products/form"); // Mantener la vista sin redirect
+            }else{
+                return Mono.just("products/form-img"); // Mantener la vista sin redirect
+            }
         }
 
         if( product.getCreateAt() == null ) {
             product.setCreateAt(new java.util.Date());
         }
 
+
+        // FilePart es la representación reactiva de un fichero recibido en WebFlux
+        if (file != null && file.filename() != null && !file.filename().trim().isEmpty()){
+            // Generar producto con imagen
+
+            return fileStorageFacade.saveFile(file)
+                    .flatMap( resourceUUID -> {
+                        product.setPicture( resourceUUID.uuid().toString() );
+                        return Mono.just(resourceUUID);
+                    }).then( productService.save(product) )
+                    .doOnNext(p -> log.info("Created product: {}", p.getName()))
+                    .thenReturn("redirect:/products?success=producto+guardado+con+exito")
+                    // solo caputra ResponseStatusException lanzado desde el servicio
+//                .onErrorResume(ResponseStatusException.class, ex -> {
+//                    model.addAttribute("title", "New Product");
+//                    model.addAttribute("error", ex.getReason());
+//                    return Mono.just("products/form");
+//                });
+                    // captura cualquier otro error
+                    .onErrorResume(ex -> {
+                        log.error("Error saving product or file", ex);
+                        model.addAttribute("title", "New Product");
+                        model.addAttribute("error", ex.getMessage());
+                        // si quieres mostrar la vista con upload:
+                        return Mono.just("products/form-img");
+                    });
+        }
+        // Generar producto sin imagen
+
+
         // Dejar que el servicio gestione la asociación/validación de categoría y el guardado
         return productService.save(product)
                 .doOnNext(p -> log.info("Created product: {}", p.getName()))
                 .thenReturn("redirect:/products?success=producto+guardado+con+exito")
-                .onErrorResume(ResponseStatusException.class, ex -> {
+                // solo caputra ResponseStatusException lanzado desde el servicio
+//                .onErrorResume(ResponseStatusException.class, ex -> {
+//                    model.addAttribute("title", "New Product");
+//                    model.addAttribute("error", ex.getReason());
+//                    return Mono.just("products/form");
+//                });
+                // captura cualquier otro error
+                .onErrorResume(ex -> {
+                    log.error("Error saving product or file", ex);
                     model.addAttribute("title", "New Product");
-                    model.addAttribute("error", ex.getReason());
-                    return Mono.just("products/form");
+                    model.addAttribute("error", ex.getMessage());
+                    // si quieres mostrar la vista con upload:
+                    return Mono.just("products/form-img");
                 });
     }
 
@@ -145,11 +204,25 @@ public class ProductController {
                 .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
     }
 
+    @GetMapping({"/products/edit-img/{id}", "/products/form/{id}"})
+    public Mono<String> editProductWithImgForm(@PathVariable("id") String id, Model model){
+        return productService.findById(id)
+                .doOnNext(p -> log.info("Editing product: {}", p.getName()))
+                .flatMap(p -> {
+                    model.addAttribute("title", "Edit Product");
+                    model.addAttribute("product", p);
+                    return Mono.just("products/form-img");
+                })
+                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
+    }
     // POST/PUT actualizar producto (anti-patrón: basado en redirect + BindingResult)
-    @RequestMapping(value = "/products/form/{id}", method = { RequestMethod.POST, RequestMethod.PUT } )
+    @RequestMapping(value = "/products/form/{id}", method = { RequestMethod.POST, RequestMethod.PUT },
+        consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE,MediaType.MULTIPART_FORM_DATA_VALUE}
+    )
     public Mono<String> updateProduct(@Valid @ModelAttribute Product product,
                                       Errors errors,
                                       @PathVariable("id") String id,
+                                        @RequestPart(name = "file", required = false) FilePart file,
                                       Model model,
                                       SessionStatus status) {
 
@@ -160,12 +233,34 @@ public class ProductController {
             model.addAttribute("title", "Edit Product");
             return Mono.just("products/form"); // Mantener la vista sin redirect
         }
-
-        return productService.update(product, id)
+        // FilePart es la representación reactiva de un fichero recibido en WebFlux
+        Mono<Void> fileTransferMono;
+        if (file != null && file.filename() != null && !file.filename().trim().isEmpty()){
+            log.info("Updating product with new file: {}", file.filename());
+            fileTransferMono = fileStorageFacade.updateFile(product.getPicture(), file)
+                    .flatMap( resourceUUID -> {
+                        product.setPicture( resourceUUID.uuid().toString() );
+                        return Mono.empty();
+                    });
+        } else {
+            fileTransferMono = Mono.empty();
+        }
+        return fileTransferMono
+                .then(productService.update(product, id))
                 .doOnNext(p -> log.info("Updated product: {}", p.getName()))
                 .doOnSuccess(p -> status.setComplete())
                 .thenReturn("redirect:/products?success=Product+Updated")
-                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
+                .onErrorResume(ex -> {
+                    log.error("Error updating product or file", ex);
+                    model.addAttribute("title", "Edit Product");
+                    model.addAttribute("error", ex.getMessage());
+                    return Mono.just("products/form");
+                });
+//        return productService.update(product, id)
+//                .doOnNext(p -> log.info("Updated product: {}", p.getName()))
+//                .doOnSuccess(p -> status.setComplete())
+//                .thenReturn("redirect:/products?success=Product+Updated")
+//                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
     }
 
     // ------------------------------------------------------------

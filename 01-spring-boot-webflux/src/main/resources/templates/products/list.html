@@ -22,6 +22,8 @@
         <a th:href="@{/}">Inicio</a>
         &nbsp;|&nbsp;
         <a th:href="@{/products/form}">Nuevo producto</a>
+        |&nbsp;
+        <a th:href="@{/products/form-img}">Nuevo producto con imagen</a>
     </div>
 
     <br />
@@ -47,6 +49,7 @@
                 <td class="actions">
                     <a th:href="@{/products/{id}(id=${product.id})}">Ver</a>
                     <a th:href="@{/products/edit/{id}(id=${product.id})}">Editar</a>
+                    <a th:href="@{/products/edit-img/{id}(id=${product.id})}">Editar (Con Image)</a>
                     <a th:href="@{/products/eliminar/{id}(id=${product.id})}"
                         onclick="return confirm('Estas seguro que quieres eliminar')">Eliminar</a>
                 </td>

@@ -27,8 +27,10 @@ public class Product {
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private Date createAt;
 
-    @Valid
+    //@Valid
     private Category category;
+
+    private String picture;
 
     public Product() {
     }
@@ -46,6 +48,15 @@ public class Product {
         this.price = price;
         this.createAt = Objects.requireNonNullElse( createAt, new Date());
         this.category = category;
+    }
+
+    public Product(String id, String name, Double price, Date createAt,Category category,String picture) {
+        this.id = id;
+        this.name = name;
+        this.price = price;
+        this.createAt = Objects.requireNonNullElse( createAt, new Date());
+        this.category = category;
+        this.picture = picture;
     }
 
     public String getId() {
@@ -80,13 +91,13 @@ public class Product {
         this.createAt = createAt;
     }
 
-    public Category getCategory() {
-        return category;
-    }
+    public void setPicture(String picture){ this.picture = picture;}
 
-    public void setCategory(Category category) {
-        this.category = category;
-    }
+    public String getPicture(){ return picture; }
+
+    public Category getCategory() {        return category;    }
+
+    public void setCategory(Category category) {        this.category = category;    }
 
     public static ProductBuilder builder() {
         return new ProductBuilder();
@@ -98,6 +109,7 @@ public class Product {
         private Double price;
         private Date createAt;
         private Category category;
+        private String picture;
 
         public ProductBuilder() {
 
@@ -127,8 +139,14 @@ public class Product {
             this.category = category;
             return this;
         }
+
+        public ProductBuilder withPicture(String picture) {
+            this.picture = picture;
+            return this;
+        }
+
         public Product build() {
-            return new Product(id, name, price, createAt, category);
+            return new Product(id, name, price, createAt, category, picture);
         }
     }
 

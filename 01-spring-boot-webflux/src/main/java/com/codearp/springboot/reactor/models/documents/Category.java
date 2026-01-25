@@ -38,7 +38,7 @@ public class Category {
     }
 
     public boolean isEmpty() {
-        return this.id == null || ( this.name == null || this.name.name().isEmpty() ) ;
+        return this.id == null && this.name == null;
     }
 
     public String getId() {
