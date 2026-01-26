@@ -105,6 +105,18 @@ public class ProductController {
         return Mono.just("products/form-img");
     }
 
+    @GetMapping("/products/ver/{id}")
+    public Mono<String> getDetailProduct(Model model, @PathVariable("id") String id) {
+        return productService.findById(id)
+                .doOnNext(p -> log.info("Viewing product: {}", p.getName()))
+                .flatMap(p -> {
+                    model.addAttribute("product", p);
+                    model.addAttribute("title", "Product Detail: " + p.getName());
+                    return Mono.just("products/view.html");
+                })
+                .onErrorResume(ex -> Mono.just("redirect:/products?error=Product+Not+Found"));
+    }
+
     // POST crear producto (reactivo)
     @PostMapping(value = "/products/form", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE,MediaType.MULTIPART_FORM_DATA_VALUE})
     public Mono<String> saveProduct(

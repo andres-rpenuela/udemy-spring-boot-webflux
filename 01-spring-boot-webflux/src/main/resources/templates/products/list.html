@@ -47,7 +47,7 @@
                 <td th:text="${#dates.format(product.createAt, 'dd-MM-yyyy')}">01-01-2020</td>
                 <td th:text="${product.category != null ? product.category.name : 'Sin categoria'}">Categoria</td>
                 <td class="actions">
-                    <a th:href="@{/products/{id}(id=${product.id})}">Ver</a>
+                    <a th:href="@{/products/ver/{id}(id=${product.id})}">Ver</a>
                     <a th:href="@{/products/edit/{id}(id=${product.id})}">Editar</a>
                     <a th:href="@{/products/edit-img/{id}(id=${product.id})}">Editar (Con Image)</a>
                     <a th:href="@{/products/eliminar/{id}(id=${product.id})}"
