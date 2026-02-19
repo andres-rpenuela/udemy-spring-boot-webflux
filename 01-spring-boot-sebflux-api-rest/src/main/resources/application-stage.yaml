@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: 01-spring-boot-webflux-api-rest
+  mongodb:
+    port: 27017
+    database: demo_db
+    username: root
+    password: example
+    authentication-database: admin
+  docker:
+    compose:
+      profiles:
+        active: true
+      file: docker-compose.yaml
+
+server:
+  port: 8082
+
+
+config:
+  uploads:
+    path: ../uploads

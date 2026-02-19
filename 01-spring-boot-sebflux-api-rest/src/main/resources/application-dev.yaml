@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: 01-spring-boot-webflux-api-rest
+  mongodb:
+    # En local
+    #host: 127.0.0.1
+    # En docker
+    host: mongo
+    port: 27017
+    database: demo_db
+    username: root
+    password: example
+    authentication-database: admin
+  docker:
+    compose:
+      profiles:
+        active: true
+      file: docker-compose.yaml
+
+server:
+  port: 8082
+
+# src/main/resources/application.yaml
+#spring:
+#  application:
+#    name: 01-spring-boot-webflux-api-rest
+#  docker:
+#    compose:
+#      profiles:
+#        active: true
+#      file: docker-compose.yaml
+#  mongodb:
+#    #uri: mongodb://root:example@mongo:27017/demo_db?authSource=admin&authMechanism=SCRAM-SHA-256
+#    uri: mongodb://root:example@localhost:27017/demo_db?authSource=admin&authMechanism=SCRAM-SHA-256
+#
+#server:
+#  port: 8082
+
+# Path files
+config:
+  uploads:
+    path: ../uploads
