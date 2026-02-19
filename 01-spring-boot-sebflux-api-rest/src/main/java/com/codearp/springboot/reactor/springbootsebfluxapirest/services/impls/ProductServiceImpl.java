@@ -1,5 +1,6 @@
 package com.codearp.springboot.reactor.springbootsebfluxapirest.services.impls;
 
+import com.codearp.springboot.reactor.springbootsebfluxapirest.services.files.FileStorageRemoveService;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.shared.CATEGORY;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.dtos.ProductDto;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.repositories.CategoryDao;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.Date;
 
@@ -20,6 +22,8 @@ public class ProductServiceImpl implements com.codearp.springboot.reactor.spring
     private final ProductDao productDao;
     private final CategoryDao categoryDao;
 
+    private final FileStorageRemoveService fileStorageRemoveService;
+
     @Override
     public Flux<ProductDto> recoverALlProduct() {
         return productDao.findAll()
@@ -29,6 +33,7 @@ public class ProductServiceImpl implements com.codearp.springboot.reactor.spring
                     productDto.setName(product.getName());
                     productDto.setPrice(product.getPrice());
                     productDto.setCreateAt(product.getCreateAt());
+                    productDto.setPicture(product.getPicture());
                     if (product.getCategory() != null) {
                         productDto.setCategory(CATEGORY.fromCategory(product.getCategory()));
                     }
@@ -43,24 +48,40 @@ public class ProductServiceImpl implements com.codearp.springboot.reactor.spring
 
     @Override
     public Mono<ProductDto> recoverProductById(String id) {
+
         return productDao.findById(id)
+
+                .switchIfEmpty(Mono.error(
+                        new RuntimeException("Product not found with id: " + id)
+                ))
                 .map(product -> {
                     ProductDto productDto = new ProductDto();
                     productDto.setId(product.getId());
                     productDto.setName(product.getName());
                     productDto.setPrice(product.getPrice());
                     productDto.setCreateAt(product.getCreateAt());
+                    productDto.setPicture(product.getPicture());
+
                     if (product.getCategory() != null) {
                         productDto.setCategory(CATEGORY.fromCategory(product.getCategory()));
                     }
+
                     return productDto;
                 })
-                .switchIfEmpty(Mono.error(new RuntimeException("Product not found with id: " + id)))
                 .onErrorResume(e -> {
                     log.error("Error retrieving product by id {}: {}", id, e.getMessage());
-                    return Mono.error(e);
+
+                    return fileStorageRemoveService.deleteFile(id)
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .onErrorResume(fileError -> {
+                                log.error("Error deleting file for product with id {}: {}",
+                                        id, fileError.getMessage());
+                                return Mono.empty();
+                            })
+                            .then(Mono.error(e));
                 });
     }
+
 
     @Override
     public Mono<ProductDto> saveProduct(ProductDto productDto) {
@@ -80,6 +101,7 @@ public class ProductServiceImpl implements com.codearp.springboot.reactor.spring
                     product.setPrice(productDto.getPrice());
                     product.setCreateAt(productDto.getCreateAt());
                     product.setCategory(cat);
+                    product.setPicture(productDto.getPicture());
                     return productDao.save(product);
                 })
                 .map(p -> {

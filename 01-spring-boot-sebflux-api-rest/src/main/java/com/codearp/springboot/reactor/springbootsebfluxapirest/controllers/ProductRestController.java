@@ -2,9 +2,11 @@ package com.codearp.springboot.reactor.springbootsebfluxapirest.controllers;
 
 import com.codearp.springboot.reactor.springbootsebfluxapirest.dtos.ProductDto;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.facades.ShopFacade;
+import com.codearp.springboot.reactor.springbootsebfluxapirest.facades.files.FileStorageFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,6 +17,7 @@ import reactor.core.publisher.Mono;
 public class ProductRestController {
 
     private final ShopFacade shopFacade;
+    private final FileStorageFacade fileStorageFacade;
 
     // La forma más simple y reactiva (streaming, sin ResponseEntity):
     @GetMapping({"","/"})
@@ -48,7 +51,7 @@ public class ProductRestController {
     }
 
     // ontrolar el status (ej. devolver 204 cuando no hay elementos) y seguir enviando un Flux (mantener streaming), usa hasElements() sobre un Flux compartido/cached.
-    @GetMapping("/v3/{id}")
+    @GetMapping(value = "/v3/{id}")
     public Mono<ResponseEntity<Flux<ProductDto>>> recoverAllProductsV3() {
         Flux<ProductDto> flux = shopFacade.recoverAllProducts()
                 .doOnError(e -> {/* log si quieres */})
@@ -94,6 +97,29 @@ public class ProductRestController {
                 .map(ResponseEntity::ok) // envuelve el ResponseEntity<ProductDto> en otro ResponseEntity
                 .onErrorMap(e -> new RuntimeException("Failed to save product: " + productDto.getName(), e));
     }
+
+    @PostMapping(
+            value = "/v2",
+            consumes = {MediaType.MULTIPART_FORM_DATA_VALUE,MediaType.APPLICATION_OCTET_STREAM_VALUE},
+            produces = {MediaType.MULTIPART_FORM_DATA_VALUE,MediaType.APPLICATION_OCTET_STREAM_VALUE}
+    )
+    public Mono<ResponseEntity<ProductDto>> saveProductWithImage(
+            @RequestPart("product") ProductDto productDto,
+            @RequestPart("image") FilePart image) {
+
+
+        return  fileStorageFacade.saveFile(image)
+                .flatMap(fileId -> {
+                    productDto.setPicture(fileId.uuid().toString());
+                    return shopFacade.saveProduct(productDto);
+                })
+                .map(savedProduct -> ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(savedProduct))
+                .onErrorMap(e -> new RuntimeException("Failed to save product with image: " + productDto.getName(), e));
+    }
+
+
 
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> deleteProduct(@PathVariable String id) {
