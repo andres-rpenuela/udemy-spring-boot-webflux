@@ -3,13 +3,20 @@ package com.codearp.springboot.reactor.springbootsebfluxapirest.controllers;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.dtos.ProductDto;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.facades.ShopFacade;
 import com.codearp.springboot.reactor.springbootsebfluxapirest.facades.files.FileStorageFacade;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/products")
@@ -100,23 +107,70 @@ public class ProductRestController {
 
     @PostMapping(
             value = "/v2",
-            consumes = {MediaType.MULTIPART_FORM_DATA_VALUE,MediaType.APPLICATION_OCTET_STREAM_VALUE},
-            produces = {MediaType.MULTIPART_FORM_DATA_VALUE,MediaType.APPLICATION_OCTET_STREAM_VALUE}
+            consumes = { MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_OCTET_STREAM_VALUE },
+            produces = MediaType.APPLICATION_JSON_VALUE
     )
-    public Mono<ResponseEntity<ProductDto>> saveProductWithImage(
-            @RequestPart("product") ProductDto productDto,
-            @RequestPart("image") FilePart image) {
+    public Mono<ResponseEntity<Map<String, Object>>> saveProductWithImage(
+            @Valid @RequestPart("product") Mono<ProductDto> monoProductDto, // El @Valid se aplica al ProductDto dentro del Mono, lo que permite validar los campos del producto antes de procesar la imagen.
+            @RequestPart(value = "image", required = false) FilePart image) {
 
+        return monoProductDto
+                .flatMap(productDto -> {
+                    if (image == null) {
+                        return shopFacade.saveProduct(productDto)
+                                .map(savedProduct -> {
+                                    Map<String, Object> response = new HashMap<>();
+                                    response.put("product", savedProduct);
+                                    response.put("message", "Product saved successfully without image");
 
-        return  fileStorageFacade.saveFile(image)
-                .flatMap(fileId -> {
-                    productDto.setPicture(fileId.uuid().toString());
-                    return shopFacade.saveProduct(productDto);
+                                    return ResponseEntity.ok()
+                                            .contentType(MediaType.APPLICATION_JSON)
+                                            .body(response);
+                                });
+                    }
+                    // Si hay una imagen, primero la guardamos y luego asociamos su ID al producto antes de guardarlo.
+                    return fileStorageFacade.saveFile(image)
+                            .flatMap(fileId -> {
+                                productDto.setPicture(fileId.uuid().toString());
+                                return shopFacade.saveProduct(productDto);
+                            })
+                            .map(savedProduct -> {
+                                Map<String, Object> response = new HashMap<>();
+                                response.put("product", savedProduct);
+                                response.put("message", "Product saved successfully with image");
+
+                                return ResponseEntity.ok()
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .body(response);
+                            });
                 })
-                .map(savedProduct -> ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(savedProduct))
-                .onErrorMap(e -> new RuntimeException("Failed to save product with image: " + productDto.getName(), e));
+                .onErrorResume(WebExchangeBindException.class, ex ->
+                        Flux.fromIterable(ex.getFieldErrors())
+                                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                                .collectList()
+                                .map(errors -> {
+                                    Map<String, Object> response = new HashMap<>();
+                                    response.put("errors", errors);
+                                    response.put("timestamp", LocalDateTime.now());
+                                    response.put("status", HttpStatus.BAD_REQUEST.value());
+
+                                    return ResponseEntity.badRequest().body(response);
+                                })
+                )
+                .onErrorMap(ex ->
+                        new RuntimeException("Unexpected error while saving product with image", ex)
+                );
+
+
+//        return  fileStorageFacade.saveFile(image)
+//                .flatMap(fileId -> {
+//                    productDto.setPicture(fileId.uuid().toString());
+//                    return shopFacade.saveProduct(productDto);
+//                })
+//                .map(savedProduct -> ResponseEntity.ok()
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .body(savedProduct))
+//                .onErrorMap(e -> new RuntimeException("Failed to save product with image: " + productDto.getName(), e));
     }
 
 
